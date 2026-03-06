@@ -10,7 +10,6 @@ margin:0;
 font-family:sans-serif;
 text-align:center;
 background:#87ceeb;
-transition:background 2s;
 }
 
 h1{margin-top:20px;}
@@ -49,7 +48,6 @@ bottom:5px;
 width:30px;
 height:50px;
 background:#ff4c4c;
-border-radius:5px;
 }
 
 .bird{
@@ -58,17 +56,6 @@ width:35px;
 height:25px;
 background:black;
 top:120px;
-border-radius:5px;
-}
-
-.jump{
-animation:jump 0.6s;
-}
-
-@keyframes jump{
-0%{bottom:5px}
-50%{bottom:120px}
-100%{bottom:5px}
 }
 
 button{
@@ -81,7 +68,6 @@ color:white;
 cursor:pointer;
 }
 
-#score,#highscore{font-size:20px;}
 </style>
 </head>
 
@@ -95,7 +81,8 @@ cursor:pointer;
 <div id="ground"></div>
 </div>
 
-<p>SPACEキー / クリックでジャンプ</p>
+<p>SPACE長押しで高くジャンプ</p>
+
 <p id="score">Score: 0</p>
 <p id="highscore">High Score: 0</p>
 
@@ -105,24 +92,33 @@ const player=document.getElementById("player")
 const game=document.getElementById("game")
 
 let obstacles=[]
-let speed=3   // ← スピードゆっくりに変更
+let speed=3
 let score=0
 let gameRunning=false
 let highscore=localStorage.getItem("jumpHighscore")||0
 
 document.getElementById("highscore").textContent="High Score: "+highscore
 
-function jump(){
-if(player.classList.contains("jump")) return
-player.classList.add("jump")
-setTimeout(()=>player.classList.remove("jump"),600)
-}
+let y=5
+let velocity=0
+let gravity=0.6
+let jumpPower=0
+let jumping=false
 
 document.addEventListener("keydown",e=>{
-if(e.code==="Space") jump()
+if(e.code==="Space"){
+jumpPower+=0.5
+if(jumpPower>12) jumpPower=12
+}
 })
 
-document.addEventListener("click",jump)
+document.addEventListener("keyup",e=>{
+if(e.code==="Space" && !jumping){
+velocity=jumpPower
+jumpPower=0
+jumping=true
+}
+})
 
 function createCactus(){
 
@@ -166,12 +162,10 @@ if(!gameRunning) return
 score++
 document.getElementById("score").textContent="Score: "+score
 
-// 少しずつスピードアップ
 if(score%300===0){
 speed+=0.5
 }
 
-// 障害物の間隔を短く
 if(Math.random()<0.08){
 createCactus()
 }
@@ -188,6 +182,17 @@ gameLoop()
 function gameLoop(){
 
 if(!gameRunning) return
+
+velocity-=gravity
+y+=velocity
+
+if(y<=5){
+y=5
+velocity=0
+jumping=false
+}
+
+player.style.bottom=y+"px"
 
 const playerRect=player.getBoundingClientRect()
 
