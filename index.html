@@ -13,9 +13,7 @@ background:#87ceeb;
 transition:background 2s;
 }
 
-h1{
-margin-top:20px;
-}
+h1{margin-top:20px;}
 
 #game{
 width:800px;
@@ -83,9 +81,7 @@ color:white;
 cursor:pointer;
 }
 
-#score,#highscore{
-font-size:20px;
-}
+#score,#highscore{font-size:20px;}
 </style>
 </head>
 
@@ -105,11 +101,11 @@ font-size:20px;
 
 <script>
 
-const player = document.getElementById("player")
-const game = document.getElementById("game")
+const player=document.getElementById("player")
+const game=document.getElementById("game")
 
 let obstacles=[]
-let speed=6
+let speed=3   // ← スピードゆっくりに変更
 let score=0
 let gameRunning=false
 let highscore=localStorage.getItem("jumpHighscore")||0
@@ -137,11 +133,9 @@ obs.style.left="800px"
 game.appendChild(obs)
 
 obstacles.push({
-type:"cactus",
 x:800,
 element:obs
 })
-
 }
 
 function createBird(){
@@ -153,17 +147,15 @@ bird.style.left="800px"
 game.appendChild(bird)
 
 obstacles.push({
-type:"bird",
 x:800,
 element:bird
 })
-
 }
 
 function startGame(){
 
 gameRunning=true
-speed=6
+speed=3
 score=0
 obstacles=[]
 
@@ -174,30 +166,23 @@ if(!gameRunning) return
 score++
 document.getElementById("score").textContent="Score: "+score
 
-if(score%200===0){
-speed+=1
+// 少しずつスピードアップ
+if(score%300===0){
+speed+=0.5
 }
 
-if(Math.random()<0.03){
+// 障害物の間隔を短く
+if(Math.random()<0.08){
 createCactus()
 }
 
-if(score>300 && Math.random()<0.02){
+if(score>200 && Math.random()<0.05){
 createBird()
-}
-
-if(score%500===0){
-document.body.style.background="#111"
-}
-
-if(score%800===0){
-document.body.style.background="#87ceeb"
 }
 
 },100)
 
 gameLoop()
-
 }
 
 function gameLoop(){
@@ -230,7 +215,6 @@ obstacles.splice(index,1)
 })
 
 requestAnimationFrame(gameLoop)
-
 }
 
 function gameOver(){
@@ -245,7 +229,6 @@ alert("ゲームオーバー！ Score: "+score)
 }
 
 location.reload()
-
 }
 
 </script>
