@@ -87,7 +87,7 @@ let boss=null
 
 let score=0
 let difficulty=1
-let nextBoss=800
+let nextBoss=6000
 
 let high=localStorage.getItem("spaceHigh")||0
 document.getElementById("high").innerText=high
@@ -116,7 +116,7 @@ let player={
 x:210,
 y:560,
 speed:6,
-hp:100
+hp:500
 }
 
 function startGame(){
@@ -264,7 +264,7 @@ if(boss){
 boss.y+=1
 boss.timer++
 
-if(boss.timer>70){
+if(boss.timer>90){
 
 for(let i=-2;i<=2;i++){
 
