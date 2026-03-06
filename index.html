@@ -2,15 +2,16 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Jet Fighter Insane</title>
+<title>Galaxy Fighter</title>
 
 <style>
+
 body{
 margin:0;
-overflow:hidden;
 background:black;
-color:white;
+overflow:hidden;
 font-family:monospace;
+color:white;
 }
 
 canvas{
@@ -22,38 +23,59 @@ background:black;
 #ui{
 position:absolute;
 top:10px;
-left:15px;
-font-size:18px;
+left:20px;
 }
 
 #hpbar{
-width:160px;
-height:10px;
+width:180px;
+height:12px;
 background:#333;
-margin-top:5px;
+margin-top:4px;
 }
 
 #hp{
-height:10px;
+height:12px;
 background:lime;
 width:100%;
 }
+
+#title{
+position:absolute;
+top:40%;
+width:100%;
+text-align:center;
+font-size:32px;
+}
+
 </style>
 </head>
 
 <body>
 
-<div id="ui">
-SCORE : <span id="score">0</span>
-<div id="hpbar"><div id="hp"></div></div>
+<div id="title">
+GALAXY FIGHTER<br><br>
+Press ENTER
 </div>
 
-<canvas id="game" width="400" height="600"></canvas>
+<div id="ui" style="display:none">
+
+SCORE : <span id="score">0</span><br>
+HIGH : <span id="high">0</span>
+
+<div id="hpbar">
+<div id="hp"></div>
+</div>
+
+</div>
+
+<canvas id="game" width="420" height="620"></canvas>
 
 <script>
 
 const canvas=document.getElementById("game")
 const ctx=canvas.getContext("2d")
+
+let state="title"
 
 let keys={}
 let bullets=[]
@@ -64,31 +86,46 @@ let stars=[]
 let boss=null
 
 let score=0
-let nextBoss=500
 let difficulty=1
+let nextBoss=800
 
-document.addEventListener("keydown",e=>keys[e.code]=true)
+let high=localStorage.getItem("spaceHigh")||0
+document.getElementById("high").innerText=high
+
+document.addEventListener("keydown",e=>{
+
+keys[e.code]=true
+
+if(state==="title" && e.code==="Enter") startGame()
+
+})
+
 document.addEventListener("keyup",e=>keys[e.code]=false)
 
-canvas.addEventListener("touchstart",e=>{
-let x=e.touches[0].clientX
-player.x=x-canvas.offsetLeft
-shoot()
-})
+for(let i=0;i<120;i++){
 
-for(let i=0;i<100;i++){
 stars.push({
-x:Math.random()*400,
-y:Math.random()*600,
+x:Math.random()*420,
+y:Math.random()*620,
 speed:1+Math.random()*3
 })
+
 }
 
 let player={
-x:200,
-y:520,
-speed:5,
+x:210,
+y:560,
+speed:6,
 hp:100
+}
+
+function startGame(){
+
+document.getElementById("title").style.display="none"
+document.getElementById("ui").style.display="block"
+
+state="game"
+
 }
 
 function drawJet(x,y,size,color){
@@ -107,51 +144,60 @@ ctx.fillRect(x-3,y-size,6,size+10)
 }
 
 function shoot(){
+
 bullets.push({x:player.x,y:player.y-20})
+
 }
 
-setInterval(shoot,180)
+setInterval(()=>{
+
+if(state==="game") shoot()
+
+},200)
 
 function spawnEnemy(){
 
-for(let i=0;i<2;i++){
-
 enemies.push({
-x:Math.random()*360+20,
+
+x:Math.random()*380+20,
 y:-20,
 speed:2+Math.random()*difficulty,
-vx:(Math.random()-0.5)*5,
-shootTimer:Math.random()*60
+vx:(Math.random()-0.5)*4,
+timer:0
+
 })
 
 }
 
-}
+setInterval(()=>{
 
-setInterval(spawnEnemy,600)
+if(state==="game") spawnEnemy()
+
+},700)
 
 function spawnBoss(){
 
 boss={
-x:200,
-y:-100,
-hp:30,
-speed:1.5,
-shootTimer:0
+x:210,
+y:-120,
+hp:40,
+timer:0
 }
 
 }
 
 function explosion(x,y){
 
-for(let i=0;i<25;i++){
+for(let i=0;i<30;i++){
 
 particles.push({
+
 x:x,
 y:y,
 vx:(Math.random()-0.5)*6,
 vy:(Math.random()-0.5)*6,
 life:40
+
 })
 
 }
@@ -160,23 +206,31 @@ life:40
 
 function update(){
 
-difficulty+=0.003
+difficulty+=0.002
 
 if(keys["ArrowLeft"]) player.x-=player.speed
 if(keys["ArrowRight"]) player.x+=player.speed
 
-player.x=Math.max(20,Math.min(380,player.x))
+player.x=Math.max(20,Math.min(400,player.x))
 
 stars.forEach(s=>{
+
 s.y+=s.speed
-if(s.y>600){s.y=0;s.x=Math.random()*400}
+
+if(s.y>620){
+s.y=0
+s.x=Math.random()*420
+}
+
 })
 
-bullets.forEach(b=>b.y-=10)
+bullets.forEach(b=>b.y-=9)
 
 enemyBullets.forEach(b=>{
-b.y+=5+difficulty
+
+b.y+=4+difficulty
 b.x+=b.vx
+
 })
 
 enemies.forEach(e=>{
@@ -184,17 +238,14 @@ enemies.forEach(e=>{
 e.y+=e.speed
 e.x+=e.vx
 
-if(e.x<20||e.x>380) e.vx*=-1
+if(e.x<20||e.x>400) e.vx*=-1
 
-e.shootTimer++
+e.timer++
 
-if(e.shootTimer>50){
+if(e.timer>80){
 
-enemyBullets.push({x:e.x,y:e.y,vx:0})
-enemyBullets.push({x:e.x,y:e.y,vx:-2})
-enemyBullets.push({x:e.x,y:e.y,vx:2})
-
-e.shootTimer=0
+enemyBullets.push({x:e.x,y:e.y,vx:(Math.random()-0.5)*2})
+e.timer=0
 
 }
 
@@ -210,33 +261,35 @@ e.y=700
 
 if(boss){
 
-boss.y+=boss.speed
-boss.shootTimer++
+boss.y+=1
+boss.timer++
 
-if(boss.shootTimer>40){
+if(boss.timer>40){
 
-for(let i=-3;i<=3;i++){
+for(let i=-4;i<=4;i++){
 
 enemyBullets.push({
+
 x:boss.x,
 y:boss.y,
-vx:i
+vx:i*0.8
+
 })
 
 }
 
-boss.shootTimer=0
+boss.timer=0
 
 }
 
 }
 
-enemyBullets.forEach((b,bi)=>{
+enemyBullets.forEach((b,i)=>{
 
 if(Math.abs(b.x-player.x)<18 && Math.abs(b.y-player.y)<18){
 
 player.hp-=10
-enemyBullets.splice(bi,1)
+enemyBullets.splice(i,1)
 
 }
 
@@ -261,7 +314,7 @@ score+=100
 
 if(boss){
 
-if(Math.abs(b.x-boss.x)<45 && Math.abs(b.y-boss.y)<45){
+if(Math.abs(b.x-boss.x)<50 && Math.abs(b.y-boss.y)<50){
 
 bullets.splice(bi,1)
 boss.hp--
@@ -270,7 +323,7 @@ if(boss.hp<=0){
 
 explosion(boss.x,boss.y)
 
-score+=1500
+score+=2000
 boss=null
 
 }
@@ -282,9 +335,11 @@ boss=null
 })
 
 particles.forEach(p=>{
+
 p.x+=p.vx
 p.y+=p.vy
 p.life--
+
 })
 
 particles=particles.filter(p=>p.life>0)
@@ -294,7 +349,7 @@ enemyBullets=enemyBullets.filter(b=>b.y<650)
 if(score>=nextBoss && !boss){
 
 spawnBoss()
-nextBoss+=500
+nextBoss+=800
 
 }
 
@@ -303,7 +358,14 @@ document.getElementById("hp").style.width=player.hp+"%"
 
 if(player.hp<=0){
 
+if(score>high){
+
+localStorage.setItem("spaceHigh",score)
+
+}
+
 alert("GAME OVER\nScore:"+score)
+
 location.reload()
 
 }
@@ -312,49 +374,62 @@ location.reload()
 
 function draw(){
 
-ctx.clearRect(0,0,400,600)
+ctx.clearRect(0,0,420,620)
 
 ctx.fillStyle="white"
+
 stars.forEach(s=>{
+
 ctx.fillRect(s.x,s.y,2,2)
+
 })
 
 drawJet(player.x,player.y,20,"cyan")
 
 bullets.forEach(b=>{
+
 ctx.fillStyle="yellow"
 ctx.fillRect(b.x-2,b.y-10,4,10)
+
 })
 
 enemyBullets.forEach(b=>{
+
 ctx.fillStyle="red"
 ctx.fillRect(b.x-2,b.y,4,8)
+
 })
 
 enemies.forEach(e=>{
+
 drawJet(e.x,e.y,15,"red")
+
 })
 
 if(boss){
 
-drawJet(boss.x,boss.y,60,"orange")
+drawJet(boss.x,boss.y,70,"orange")
 
 ctx.fillStyle="white"
-ctx.fillText("BOSS HP:"+boss.hp,boss.x-40,boss.y-70)
+ctx.fillText("BOSS HP:"+boss.hp,boss.x-40,boss.y-80)
 
 }
 
 particles.forEach(p=>{
+
 ctx.fillStyle="orange"
 ctx.fillRect(p.x,p.y,3,3)
+
 })
 
 }
 
 function loop(){
 
-update()
+if(state==="game") update()
+
 draw()
+
 requestAnimationFrame(loop)
 
 }
@@ -362,5 +437,6 @@ requestAnimationFrame(loop)
 loop()
 
 </script>
+
 </body>
 </html>
