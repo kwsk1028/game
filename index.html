@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Super Jump Game</title>
+
+<style>
+body{
+margin:0;
+font-family:sans-serif;
+text-align:center;
+background:#87ceeb;
+transition:background 2s;
+}
+
+h1{
+margin-top:20px;
+}
+
+#game{
+width:800px;
+height:250px;
+margin:30px auto;
+background:#eee;
+border-radius:10px;
+position:relative;
+overflow:hidden;
+}
+
+#ground{
+position:absolute;
+bottom:0;
+width:100%;
+height:5px;
+background:#444;
+}
+
+#player{
+width:40px;
+height:40px;
+background:#00e5ff;
+position:absolute;
+bottom:5px;
+left:100px;
+border-radius:8px;
+}
+
+.obstacle{
+position:absolute;
+bottom:5px;
+width:30px;
+height:50px;
+background:#ff4c4c;
+border-radius:5px;
+}
+
+.bird{
+position:absolute;
+width:35px;
+height:25px;
+background:black;
+top:120px;
+border-radius:5px;
+}
+
+.jump{
+animation:jump 0.6s;
+}
+
+@keyframes jump{
+0%{bottom:5px}
+50%{bottom:120px}
+100%{bottom:5px}
+}
+
+button{
+padding:10px 20px;
+font-size:18px;
+border:none;
+border-radius:8px;
+background:#00c6ff;
+color:white;
+cursor:pointer;
+}
+
+#score,#highscore{
+font-size:20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🏃 Super Jump Game</h1>
+<button onclick="startGame()">START</button>
+
+<div id="game">
+<div id="player"></div>
+<div id="ground"></div>
+</div>
+
+<p>SPACEキー / クリックでジャンプ</p>
+<p id="score">Score: 0</p>
+<p id="highscore">High Score: 0</p>
+
+<script>
+
+const player = document.getElementById("player")
+const game = document.getElementById("game")
+
+let obstacles=[]
+let speed=6
+let score=0
+let gameRunning=false
+let highscore=localStorage.getItem("jumpHighscore")||0
+
+document.getElementById("highscore").textContent="High Score: "+highscore
+
+function jump(){
+if(player.classList.contains("jump")) return
+player.classList.add("jump")
+setTimeout(()=>player.classList.remove("jump"),600)
+}
+
+document.addEventListener("keydown",e=>{
+if(e.code==="Space") jump()
+})
+
+document.addEventListener("click",jump)
+
+function createCactus(){
+
+const obs=document.createElement("div")
+obs.className="obstacle"
+obs.style.left="800px"
+
+game.appendChild(obs)
+
+obstacles.push({
+type:"cactus",
+x:800,
+element:obs
+})
+
+}
+
+function createBird(){
+
+const bird=document.createElement("div")
+bird.className="bird"
+bird.style.left="800px"
+
+game.appendChild(bird)
+
+obstacles.push({
+type:"bird",
+x:800,
+element:bird
+})
+
+}
+
+function startGame(){
+
+gameRunning=true
+speed=6
+score=0
+obstacles=[]
+
+setInterval(()=>{
+
+if(!gameRunning) return
+
+score++
+document.getElementById("score").textContent="Score: "+score
+
+if(score%200===0){
+speed+=1
+}
+
+if(Math.random()<0.03){
+createCactus()
+}
+
+if(score>300 && Math.random()<0.02){
+createBird()
+}
+
+if(score%500===0){
+document.body.style.background="#111"
+}
+
+if(score%800===0){
+document.body.style.background="#87ceeb"
+}
+
+},100)
+
+gameLoop()
+
+}
+
+function gameLoop(){
+
+if(!gameRunning) return
+
+const playerRect=player.getBoundingClientRect()
+
+obstacles.forEach((obs,index)=>{
+
+obs.x-=speed
+obs.element.style.left=obs.x+"px"
+
+const rect=obs.element.getBoundingClientRect()
+
+if(
+rect.left<playerRect.right &&
+rect.right>playerRect.left &&
+rect.bottom>playerRect.top &&
+rect.top<playerRect.bottom
+){
+gameOver()
+}
+
+if(obs.x<-50){
+obs.element.remove()
+obstacles.splice(index,1)
+}
+
+})
+
+requestAnimationFrame(gameLoop)
+
+}
+
+function gameOver(){
+
+gameRunning=false
+
+if(score>highscore){
+localStorage.setItem("jumpHighscore",score)
+alert("新ハイスコア！ "+score)
+}else{
+alert("ゲームオーバー！ Score: "+score)
+}
+
+location.reload()
+
+}
+
+</script>
+
+</body>
+</html>
