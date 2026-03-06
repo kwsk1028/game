@@ -264,9 +264,9 @@ if(boss){
 boss.y+=1
 boss.timer++
 
-if(boss.timer>40){
+if(boss.timer>70){
 
-for(let i=-4;i<=4;i++){
+for(let i=-2;i<=2;i++){
 
 enemyBullets.push({
 
@@ -323,7 +323,7 @@ if(boss.hp<=0){
 
 explosion(boss.x,boss.y)
 
-score+=2000
+score+=6000
 boss=null
 
 }
