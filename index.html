@@ -2,39 +2,28 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Space Fighter Pro</title>
-
+<title>Jet Fighter Shooting</title>
 <style>
 
 body{
 margin:0;
-overflow:hidden;
 background:black;
-font-family:sans-serif;
+overflow:hidden;
+font-family:monospace;
 color:white;
 }
 
 canvas{
 display:block;
+margin:auto;
+background:linear-gradient(black,#001);
 }
 
-#ui{
+#score{
 position:absolute;
 top:10px;
-left:10px;
-font-size:18px;
-}
-
-#hpbar{
-width:200px;
-height:12px;
-background:#333;
-margin-top:5px;
-}
-
-#hp{
-height:12px;
-background:#0f0;
+left:20px;
+font-size:22px;
 }
 
 </style>
@@ -42,254 +31,190 @@ background:#0f0;
 
 <body>
 
-<div id="ui">
-Score: <span id="score">0</span>
-<div id="hpbar"><div id="hp"></div></div>
-</div>
-
-<canvas id="game"></canvas>
+<div id="score">SCORE : 0</div>
+<canvas id="game" width="400" height="600"></canvas>
 
 <script>
 
-const canvas=document.getElementById("game")
-const ctx=canvas.getContext("2d")
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-canvas.width=window.innerWidth
-canvas.height=window.innerHeight
+let keys = {};
+let bullets = [];
+let enemies = [];
+let boss = null;
+let score = 0;
+let nextBoss = 500;
 
-let score=0
-let maxHP=100
-let hp=100
+document.addEventListener("keydown",e=>keys[e.code]=true);
+document.addEventListener("keyup",e=>keys[e.code]=false);
 
 let player={
-x:canvas.width/2,
-y:canvas.height-120
+x:200,
+y:520,
+w:40,
+h:40,
+speed:5
+};
+
+function drawJet(x,y,size,color){
+ctx.fillStyle=color;
+
+ctx.beginPath();
+ctx.moveTo(x,y-size);
+ctx.lineTo(x-size/2,y+size);
+ctx.lineTo(x+size/2,y+size);
+ctx.closePath();
+ctx.fill();
+
+ctx.fillRect(x-3,y-size,6,size+10);
 }
 
-let bullets=[]
-let enemies=[]
-let particles=[]
-let stars=[]
-let items=[]
+function spawnEnemy(){
 
-// 星
-for(let i=0;i<120;i++){
-stars.push({
-x:Math.random()*canvas.width,
-y:Math.random()*canvas.height,
-s:Math.random()*2
-})
+enemies.push({
+x:Math.random()*360+20,
+y:-20,
+speed:2+Math.random()*2,
+vx:(Math.random()-0.5)*2
+});
+
 }
 
-// プレイヤー移動
-function move(x,y){
-player.x=x
-player.y=y
+setInterval(spawnEnemy,1000);
+
+function spawnBoss(){
+
+boss={
+x:200,
+y:-60,
+hp:10,
+speed:1.2
+};
+
 }
 
-window.addEventListener("mousemove",e=>{
-move(e.clientX,e.clientY)
-})
+function update(){
 
-window.addEventListener("touchmove",e=>{
-move(e.touches[0].clientX,e.touches[0].clientY)
-})
+if(keys["ArrowLeft"]) player.x-=player.speed;
+if(keys["ArrowRight"]) player.x+=player.speed;
 
-// 弾
-setInterval(()=>{
+player.x=Math.max(20,Math.min(380,player.x));
+
+if(keys["Space"] && bullets.length<6){
 
 bullets.push({
 x:player.x,
-y:player.y
-})
-
-},180)
-
-// 敵
-setInterval(()=>{
-
-enemies.push({
-x:Math.random()*canvas.width,
-y:-20,
-speed:2+Math.random()*2
-})
-
-},700)
-
-// アイテム
-setInterval(()=>{
-
-items.push({
-x:Math.random()*canvas.width,
-y:-20
-})
-
-},6000)
-
-// 爆発
-function explode(x,y){
-
-for(let i=0;i<20;i++){
-
-particles.push({
-x:x,
-y:y,
-dx:(Math.random()-0.5)*8,
-dy:(Math.random()-0.5)*8,
-life:40
-})
+y:player.y-20,
+speed:7
+});
 
 }
 
+bullets.forEach(b=>b.y-=b.speed);
+
+enemies.forEach(e=>{
+e.y+=e.speed;
+e.x+=e.vx;
+
+if(e.x<20 || e.x>380) e.vx*=-1;
+});
+
+if(boss){
+
+boss.y+=boss.speed;
+
 }
 
-// 更新
-function update(){
-
-// 星
-stars.forEach(s=>{
-s.y+=1
-if(s.y>canvas.height)s.y=0
-})
-
-// 弾
-bullets.forEach((b,i)=>{
-b.y-=10
-if(b.y<0)bullets.splice(i,1)
-})
-
-// 敵
-enemies.forEach((e,i)=>{
-
-e.y+=e.speed
-
-if(e.y>canvas.height){
-enemies.splice(i,1)
-hp-=10
-}
-
-})
-
-// アイテム
-items.forEach((it,i)=>{
-
-it.y+=3
-
-if(Math.abs(it.x-player.x)<30 && Math.abs(it.y-player.y)<30){
-items.splice(i,1)
-hp=Math.min(maxHP,hp+20)
-}
-
-})
-
-// 弾衝突
 bullets.forEach((b,bi)=>{
 
 enemies.forEach((e,ei)=>{
 
-if(Math.abs(b.x-e.x)<25 && Math.abs(b.y-e.y)<25){
+if(Math.abs(b.x-e.x)<20 && Math.abs(b.y-e.y)<20){
 
-explode(e.x,e.y)
+bullets.splice(bi,1);
+enemies.splice(ei,1);
 
-bullets.splice(bi,1)
-enemies.splice(ei,1)
-
-score+=10
-document.getElementById("score").textContent=score
+score+=100;
 
 }
 
-})
+});
 
-})
+if(boss){
 
-// パーティクル
-particles.forEach((p,i)=>{
+if(Math.abs(b.x-boss.x)<40 && Math.abs(b.y-boss.y)<40){
 
-p.x+=p.dx
-p.y+=p.dy
-p.life--
+bullets.splice(bi,1);
+boss.hp--;
 
-if(p.life<=0)particles.splice(i,1)
+if(boss.hp<=0){
 
-})
-
-// HP
-if(hp<=0){
-alert("GAME OVER\nScore:"+score)
-location.reload()
-}
-
-document.getElementById("hp").style.width=(hp/maxHP*200)+"px"
+score+=500;
+boss=null;
 
 }
 
-// 描画
+}
+
+}
+
+});
+
+if(score>=nextBoss && !boss){
+
+spawnBoss();
+nextBoss+=500;
+
+}
+
+bullets=bullets.filter(b=>b.y>-10);
+
+enemies=enemies.filter(e=>e.y<650);
+
+document.getElementById("score").innerText="SCORE : "+score;
+
+}
+
 function draw(){
 
-ctx.clearRect(0,0,canvas.width,canvas.height)
+ctx.clearRect(0,0,400,600);
 
-// 星
-ctx.fillStyle="white"
-stars.forEach(s=>{
-ctx.fillRect(s.x,s.y,s.s,s.s)
-})
+drawJet(player.x,player.y,20,"cyan");
 
-// プレイヤー
-ctx.fillStyle="cyan"
-ctx.beginPath()
-ctx.moveTo(player.x,player.y-30)
-ctx.lineTo(player.x+20,player.y+20)
-ctx.lineTo(player.x+8,player.y+10)
-ctx.lineTo(player.x-8,player.y+10)
-ctx.lineTo(player.x-20,player.y+20)
-ctx.closePath()
-ctx.fill()
-
-// 弾
-ctx.fillStyle="yellow"
 bullets.forEach(b=>{
-ctx.fillRect(b.x-2,b.y,4,12)
-})
 
-// 敵
-ctx.fillStyle="red"
+ctx.fillStyle="yellow";
+ctx.fillRect(b.x-2,b.y-10,4,10);
+
+});
+
 enemies.forEach(e=>{
-ctx.beginPath()
-ctx.moveTo(e.x,e.y+20)
-ctx.lineTo(e.x+15,e.y-10)
-ctx.lineTo(e.x-15,e.y-10)
-ctx.closePath()
-ctx.fill()
-})
 
-// アイテム
-ctx.fillStyle="cyan"
-items.forEach(it=>{
-ctx.beginPath()
-ctx.arc(it.x,it.y,8,0,Math.PI*2)
-ctx.fill()
-})
+drawJet(e.x,e.y,15,"red");
 
-// 爆発
-ctx.fillStyle="orange"
-particles.forEach(p=>{
-ctx.fillRect(p.x,p.y,3,3)
-})
+});
+
+if(boss){
+
+drawJet(boss.x,boss.y,35,"orange");
+
+ctx.fillStyle="white";
+ctx.fillText("BOSS HP:"+boss.hp,boss.x-40,boss.y-40);
 
 }
 
-// ループ
+}
+
 function loop(){
 
-update()
-draw()
-
-requestAnimationFrame(loop)
+update();
+draw();
+requestAnimationFrame(loop);
 
 }
 
-loop()
+loop();
 
 </script>
 
