@@ -2,125 +2,136 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Fighter Invader</title>
+<title>Space Fighter</title>
 
 <style>
+
 body{
 margin:0;
+overflow:hidden;
 background:black;
+font-family:sans-serif;
 color:white;
 text-align:center;
-font-family:sans-serif;
 }
 
 canvas{
-background:#050510;
 display:block;
-margin:20px auto;
-border:2px solid white;
+margin:auto;
+background:#000814;
 }
+
+#ui{
+position:absolute;
+top:10px;
+left:10px;
+font-size:18px;
+}
+
 </style>
 </head>
 
 <body>
 
-<h1>✈️ Fighter Invader</h1>
-<p>← → 移動 / SPACE 攻撃</p>
+<div id="ui">
+Score: <span id="score">0</span>
+<br>
+HP: <span id="hp">5</span>
+</div>
 
-<canvas id="gameCanvas" width="600" height="420"></canvas>
-
-<p id="score">Score: 0</p>
+<canvas id="game"></canvas>
 
 <script>
 
-const canvas=document.getElementById("gameCanvas")
+const canvas=document.getElementById("game")
 const ctx=canvas.getContext("2d")
 
+canvas.width=window.innerWidth
+canvas.height=window.innerHeight
+
+let score=0
+let hp=5
+
 let player={
-x:280,
-y:370,
-width:40,
-height:30,
-speed:6
+x:canvas.width/2,
+y:canvas.height-120,
+size:30
 }
 
 let bullets=[]
 let enemies=[]
-let score=0
-let enemyDirection=1
-let keys={}
+let particles=[]
+let stars=[]
 
-// 敵作成
-for(let r=0;r<4;r++){
-for(let c=0;c<8;c++){
+// 星背景
+for(let i=0;i<100;i++){
+stars.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height,
+s:Math.random()*2
+})
+}
+
+// マウス・タッチ
+function movePlayer(x,y){
+player.x=x
+player.y=y
+}
+
+window.addEventListener("mousemove",e=>{
+movePlayer(e.clientX,e.clientY)
+})
+
+window.addEventListener("touchmove",e=>{
+movePlayer(e.touches[0].clientX,e.touches[0].clientY)
+})
+
+// 弾
+setInterval(()=>{
+
+bullets.push({
+x:player.x,
+y:player.y-20
+})
+
+},200)
+
+// 敵生成
+setInterval(()=>{
 
 enemies.push({
-x:70+c*60,
-y:40+r*50,
-width:40,
-height:30
+x:Math.random()*canvas.width,
+y:-20,
+speed:2+Math.random()*2
+})
+
+},800)
+
+// 爆発
+function explode(x,y){
+
+for(let i=0;i<15;i++){
+
+particles.push({
+x:x,
+y:y,
+dx:(Math.random()-0.5)*6,
+dy:(Math.random()-0.5)*6,
+life:30
 })
 
 }
-}
-
-// キー操作
-document.addEventListener("keydown",e=>{
-keys[e.code]=true
-
-if(e.code==="Space"){
-bullets.push({
-x:player.x+18,
-y:player.y,
-w:4,
-h:12
-})
-}
-})
-
-document.addEventListener("keyup",e=>{
-keys[e.code]=false
-})
-
-// プレイヤー戦闘機
-function drawPlayer(x,y){
-
-ctx.fillStyle="cyan"
-
-ctx.beginPath()
-ctx.moveTo(x+20,y)
-ctx.lineTo(x+40,y+30)
-ctx.lineTo(x+25,y+25)
-ctx.lineTo(x+15,y+25)
-ctx.lineTo(x,y+30)
-ctx.closePath()
-ctx.fill()
 
 }
 
-// 敵戦闘機
-function drawEnemy(x,y){
-
-ctx.fillStyle="lime"
-
-ctx.beginPath()
-ctx.moveTo(x+20,y+30)
-ctx.lineTo(x+40,y)
-ctx.lineTo(x+30,y+5)
-ctx.lineTo(x+10,y+5)
-ctx.lineTo(x,y)
-ctx.closePath()
-ctx.fill()
-
-}
-
-// 更新処理
+// 更新
 function update(){
 
-if(keys["ArrowLeft"]) player.x-=player.speed
-if(keys["ArrowRight"]) player.x+=player.speed
-
-player.x=Math.max(0,Math.min(canvas.width-player.width,player.x))
+// 星
+stars.forEach(s=>{
+s.y+=1
+if(s.y>canvas.height) s.y=0
+})
 
 // 弾
 bullets.forEach((b,i)=>{
@@ -128,53 +139,63 @@ b.y-=8
 if(b.y<0) bullets.splice(i,1)
 })
 
-// 敵移動
-let edge=false
+// 敵
+enemies.forEach((e,i)=>{
 
-enemies.forEach(e=>{
-e.x+=enemyDirection*1
+e.y+=e.speed
 
-if(e.x<0||e.x+40>canvas.width){
-edge=true
+if(e.y>canvas.height){
+
+hp--
+document.getElementById("hp").textContent=hp
+
+enemies.splice(i,1)
+
+if(hp<=0){
+alert("GAME OVER\nScore:"+score)
+location.reload()
 }
+
+}
+
 })
-
-if(edge){
-enemyDirection*=-1
-enemies.forEach(e=>e.y+=20)
-}
 
 // 衝突
 bullets.forEach((b,bi)=>{
+
 enemies.forEach((e,ei)=>{
 
 if(
-b.x<e.x+40 &&
-b.x+b.w>e.x &&
-b.y<e.y+30 &&
-b.y+b.h>e.y
+Math.abs(b.x-e.x)<25 &&
+Math.abs(b.y-e.y)<25
 ){
+
+explode(e.x,e.y)
+
 bullets.splice(bi,1)
 enemies.splice(ei,1)
 
 score+=10
-document.getElementById("score").textContent="Score: "+score
+document.getElementById("score").textContent=score
+
 }
-})
+
 })
 
-// ゲームオーバー
-enemies.forEach(e=>{
-if(e.y+30>player.y){
-alert("ゲームオーバー")
-location.reload()
-}
 })
 
-if(enemies.length===0){
-alert("クリア！ Score:"+score)
-location.reload()
+// パーティクル
+particles.forEach((p,i)=>{
+
+p.x+=p.dx
+p.y+=p.dy
+p.life--
+
+if(p.life<=0){
+particles.splice(i,1)
 }
+
+})
 
 }
 
@@ -183,18 +204,47 @@ function draw(){
 
 ctx.clearRect(0,0,canvas.width,canvas.height)
 
+// 星
+ctx.fillStyle="white"
+stars.forEach(s=>{
+ctx.fillRect(s.x,s.y,s.s,s.s)
+})
+
 // プレイヤー
-drawPlayer(player.x,player.y)
+ctx.fillStyle="cyan"
+
+ctx.beginPath()
+ctx.moveTo(player.x,player.y-30)
+ctx.lineTo(player.x+20,player.y+20)
+ctx.lineTo(player.x+8,player.y+10)
+ctx.lineTo(player.x-8,player.y+10)
+ctx.lineTo(player.x-20,player.y+20)
+ctx.closePath()
+ctx.fill()
 
 // 弾
 ctx.fillStyle="yellow"
 bullets.forEach(b=>{
-ctx.fillRect(b.x,b.y,b.w,b.h)
+ctx.fillRect(b.x-2,b.y,4,10)
 })
 
 // 敵
+ctx.fillStyle="lime"
 enemies.forEach(e=>{
-drawEnemy(e.x,e.y)
+
+ctx.beginPath()
+ctx.moveTo(e.x,e.y+20)
+ctx.lineTo(e.x+15,e.y-10)
+ctx.lineTo(e.x-15,e.y-10)
+ctx.closePath()
+ctx.fill()
+
+})
+
+// 爆発
+ctx.fillStyle="orange"
+particles.forEach(p=>{
+ctx.fillRect(p.x,p.y,3,3)
 })
 
 }
