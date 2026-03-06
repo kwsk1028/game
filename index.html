@@ -2,70 +2,26 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Super Jump Game</title>
+<title>Invader Game</title>
 
 <style>
 body{
 margin:0;
-font-family:sans-serif;
-text-align:center;
-background:#87ceeb;
-}
-
-h1{margin-top:20px;}
-
-#game{
-width:800px;
-height:250px;
-margin:30px auto;
-background:#eee;
-border-radius:10px;
-position:relative;
-overflow:hidden;
-}
-
-#ground{
-position:absolute;
-bottom:0;
-width:100%;
-height:5px;
-background:#444;
-}
-
-#player{
-width:40px;
-height:40px;
-background:#00e5ff;
-position:absolute;
-bottom:5px;
-left:100px;
-border-radius:8px;
-}
-
-.obstacle{
-position:absolute;
-bottom:5px;
-width:30px;
-height:50px;
-background:#ff4c4c;
-}
-
-.bird{
-position:absolute;
-width:35px;
-height:25px;
 background:black;
-top:120px;
+color:white;
+text-align:center;
+font-family:sans-serif;
 }
 
-button{
-padding:10px 20px;
-font-size:18px;
-border:none;
-border-radius:8px;
-background:#00c6ff;
-color:white;
-cursor:pointer;
+h1{
+margin-top:10px;
+}
+
+canvas{
+background:#111;
+display:block;
+margin:20px auto;
+border:2px solid white;
 }
 
 </style>
@@ -73,168 +29,171 @@ cursor:pointer;
 
 <body>
 
-<h1>🏃 Super Jump Game</h1>
-<button onclick="startGame()">START</button>
+<h1>👾 インベーダーゲーム</h1>
+<p>← → で移動 / SPACEで攻撃</p>
 
-<div id="game">
-<div id="player"></div>
-<div id="ground"></div>
-</div>
-
-<p>SPACE長押しで高くジャンプ</p>
+<canvas id="gameCanvas" width="600" height="400"></canvas>
 
 <p id="score">Score: 0</p>
-<p id="highscore">High Score: 0</p>
 
 <script>
 
-const player=document.getElementById("player")
-const game=document.getElementById("game")
+const canvas = document.getElementById("gameCanvas")
+const ctx = canvas.getContext("2d")
 
-let obstacles=[]
-let speed=3
+let player = {
+x:280,
+y:360,
+width:40,
+height:20,
+speed:6
+}
+
+let bullets=[]
+let enemies=[]
 let score=0
-let gameRunning=false
-let highscore=localStorage.getItem("jumpHighscore")||0
+let gameRunning=true
 
-document.getElementById("highscore").textContent="High Score: "+highscore
+// 敵を作る
+for(let row=0; row<4; row++){
+for(let col=0; col<8; col++){
 
-let y=5
-let velocity=0
-let gravity=0.6
-let jumpPower=0
-let jumping=false
+enemies.push({
+x:60 + col*60,
+y:40 + row*40,
+width:30,
+height:20
+})
+
+}
+}
+
+let enemyDirection=1
+
+let keys={}
 
 document.addEventListener("keydown",e=>{
+keys[e.code]=true
+
 if(e.code==="Space"){
-jumpPower+=0.5
-if(jumpPower>12) jumpPower=12
+bullets.push({
+x:player.x + player.width/2 -2,
+y:player.y,
+width:4,
+height:10
+})
 }
 })
 
 document.addEventListener("keyup",e=>{
-if(e.code==="Space" && !jumping){
-velocity=jumpPower
-jumpPower=0
-jumping=true
+keys[e.code]=false
+})
+
+function update(){
+
+if(keys["ArrowLeft"]){
+player.x-=player.speed
+}
+
+if(keys["ArrowRight"]){
+player.x+=player.speed
+}
+
+player.x=Math.max(0,Math.min(canvas.width-player.width,player.x))
+
+// 弾移動
+bullets.forEach((b,i)=>{
+b.y-=8
+if(b.y<0) bullets.splice(i,1)
+})
+
+// 敵移動
+let edge=false
+
+enemies.forEach(e=>{
+e.x+=enemyDirection*1
+
+if(e.x<0 || e.x+e.width>canvas.width){
+edge=true
 }
 })
 
-function createCactus(){
-
-const obs=document.createElement("div")
-obs.className="obstacle"
-obs.style.left="800px"
-
-game.appendChild(obs)
-
-obstacles.push({
-x:800,
-element:obs
+if(edge){
+enemyDirection*=-1
+enemies.forEach(e=>{
+e.y+=20
 })
 }
 
-function createBird(){
+// 衝突判定
+bullets.forEach((b,bi)=>{
+enemies.forEach((e,ei)=>{
 
-const bird=document.createElement("div")
-bird.className="bird"
-bird.style.left="800px"
+if(
+b.x<e.x+e.width &&
+b.x+b.width>e.x &&
+b.y<e.y+e.height &&
+b.y+b.height>e.y
+){
+bullets.splice(bi,1)
+enemies.splice(ei,1)
 
-game.appendChild(bird)
-
-obstacles.push({
-x:800,
-element:bird
-})
-}
-
-function startGame(){
-
-gameRunning=true
-speed=3
-score=0
-obstacles=[]
-
-setInterval(()=>{
-
-if(!gameRunning) return
-
-score++
+score+=10
 document.getElementById("score").textContent="Score: "+score
+}
+})
+})
 
-if(score%300===0){
-speed+=0.5
+// ゲームオーバー
+enemies.forEach(e=>{
+if(e.y+e.height>player.y){
+alert("ゲームオーバー")
+location.reload()
+}
+})
+
+// 勝利
+if(enemies.length===0){
+alert("クリア！ Score: "+score)
+location.reload()
 }
 
-if(Math.random()<0.08){
-createCactus()
 }
 
-if(score>200 && Math.random()<0.05){
-createBird()
-}
+function draw(){
 
-},100)
+ctx.clearRect(0,0,canvas.width,canvas.height)
 
-gameLoop()
+// プレイヤー
+ctx.fillStyle="cyan"
+ctx.fillRect(player.x,player.y,player.width,player.height)
+
+// 弾
+ctx.fillStyle="yellow"
+bullets.forEach(b=>{
+ctx.fillRect(b.x,b.y,b.width,b.height)
+})
+
+// 敵
+ctx.fillStyle="lime"
+enemies.forEach(e=>{
+ctx.fillRect(e.x,e.y,e.width,e.height)
+})
+
 }
 
 function gameLoop(){
 
 if(!gameRunning) return
 
-velocity-=gravity
-y+=velocity
-
-if(y<=5){
-y=5
-velocity=0
-jumping=false
-}
-
-player.style.bottom=y+"px"
-
-const playerRect=player.getBoundingClientRect()
-
-obstacles.forEach((obs,index)=>{
-
-obs.x-=speed
-obs.element.style.left=obs.x+"px"
-
-const rect=obs.element.getBoundingClientRect()
-
-if(
-rect.left<playerRect.right &&
-rect.right>playerRect.left &&
-rect.bottom>playerRect.top &&
-rect.top<playerRect.bottom
-){
-gameOver()
-}
-
-if(obs.x<-50){
-obs.element.remove()
-obstacles.splice(index,1)
-}
-
-})
+update()
+draw()
 
 requestAnimationFrame(gameLoop)
+
 }
 
-function gameOver(){
-
-gameRunning=false
-
-if(score>highscore){
-localStorage.setItem("jumpHighscore",score)
-alert("新ハイスコア！ "+score)
-}else{
-alert("ゲームオーバー！ Score: "+score)
-}
-
-location.reload()
-}
+gameLoop()
 
 </script>
 
