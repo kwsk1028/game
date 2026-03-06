@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Invader Game</title>
+<title>Fighter Invader</title>
 
 <style>
 body{
@@ -13,74 +13,67 @@ text-align:center;
 font-family:sans-serif;
 }
 
-h1{
-margin-top:10px;
-}
-
 canvas{
-background:#111;
+background:#050510;
 display:block;
 margin:20px auto;
 border:2px solid white;
 }
-
 </style>
 </head>
 
 <body>
 
-<h1>👾 インベーダーゲーム</h1>
-<p>← → で移動 / SPACEで攻撃</p>
+<h1>✈️ Fighter Invader</h1>
+<p>← → 移動 / SPACE 攻撃</p>
 
-<canvas id="gameCanvas" width="600" height="400"></canvas>
+<canvas id="gameCanvas" width="600" height="420"></canvas>
 
 <p id="score">Score: 0</p>
 
 <script>
 
-const canvas = document.getElementById("gameCanvas")
-const ctx = canvas.getContext("2d")
+const canvas=document.getElementById("gameCanvas")
+const ctx=canvas.getContext("2d")
 
-let player = {
+let player={
 x:280,
-y:360,
+y:370,
 width:40,
-height:20,
+height:30,
 speed:6
 }
 
 let bullets=[]
 let enemies=[]
 let score=0
-let gameRunning=true
+let enemyDirection=1
+let keys={}
 
-// 敵を作る
-for(let row=0; row<4; row++){
-for(let col=0; col<8; col++){
+// 敵作成
+for(let r=0;r<4;r++){
+for(let c=0;c<8;c++){
 
 enemies.push({
-x:60 + col*60,
-y:40 + row*40,
-width:30,
-height:20
+x:70+c*60,
+y:40+r*50,
+width:40,
+height:30
 })
 
 }
 }
 
-let enemyDirection=1
-
-let keys={}
-
+// キー操作
 document.addEventListener("keydown",e=>{
 keys[e.code]=true
 
 if(e.code==="Space"){
 bullets.push({
-x:player.x + player.width/2 -2,
+x:player.x+18,
 y:player.y,
-width:4,
-height:10
+w:4,
+h:12
 })
 }
 })
@@ -89,19 +82,47 @@ document.addEventListener("keyup",e=>{
 keys[e.code]=false
 })
 
+// プレイヤー戦闘機
+function drawPlayer(x,y){
+
+ctx.fillStyle="cyan"
+
+ctx.beginPath()
+ctx.moveTo(x+20,y)
+ctx.lineTo(x+40,y+30)
+ctx.lineTo(x+25,y+25)
+ctx.lineTo(x+15,y+25)
+ctx.lineTo(x,y+30)
+ctx.closePath()
+ctx.fill()
+
+}
+
+// 敵戦闘機
+function drawEnemy(x,y){
+
+ctx.fillStyle="lime"
+
+ctx.beginPath()
+ctx.moveTo(x+20,y+30)
+ctx.lineTo(x+40,y)
+ctx.lineTo(x+30,y+5)
+ctx.lineTo(x+10,y+5)
+ctx.lineTo(x,y)
+ctx.closePath()
+ctx.fill()
+
+}
+
+// 更新処理
 function update(){
 
-if(keys["ArrowLeft"]){
-player.x-=player.speed
-}
-
-if(keys["ArrowRight"]){
-player.x+=player.speed
-}
+if(keys["ArrowLeft"]) player.x-=player.speed
+if(keys["ArrowRight"]) player.x+=player.speed
 
 player.x=Math.max(0,Math.min(canvas.width-player.width,player.x))
 
-// 弾移動
+// 弾
 bullets.forEach((b,i)=>{
 b.y-=8
 if(b.y<0) bullets.splice(i,1)
@@ -113,27 +134,25 @@ let edge=false
 enemies.forEach(e=>{
 e.x+=enemyDirection*1
 
-if(e.x<0 || e.x+e.width>canvas.width){
+if(e.x<0||e.x+40>canvas.width){
 edge=true
 }
 })
 
 if(edge){
 enemyDirection*=-1
-enemies.forEach(e=>{
-e.y+=20
-})
+enemies.forEach(e=>e.y+=20)
 }
 
-// 衝突判定
+// 衝突
 bullets.forEach((b,bi)=>{
 enemies.forEach((e,ei)=>{
 
 if(
-b.x<e.x+e.width &&
-b.x+b.width>e.x &&
-b.y<e.y+e.height &&
-b.y+b.height>e.y
+b.x<e.x+40 &&
+b.x+b.w>e.x &&
+b.y<e.y+30 &&
+b.y+b.h>e.y
 ){
 bullets.splice(bi,1)
 enemies.splice(ei,1)
@@ -146,45 +165,42 @@ document.getElementById("score").textContent="Score: "+score
 
 // ゲームオーバー
 enemies.forEach(e=>{
-if(e.y+e.height>player.y){
+if(e.y+30>player.y){
 alert("ゲームオーバー")
 location.reload()
 }
 })
 
-// 勝利
 if(enemies.length===0){
-alert("クリア！ Score: "+score)
+alert("クリア！ Score:"+score)
 location.reload()
 }
 
 }
 
+// 描画
 function draw(){
 
 ctx.clearRect(0,0,canvas.width,canvas.height)
 
 // プレイヤー
-ctx.fillStyle="cyan"
-ctx.fillRect(player.x,player.y,player.width,player.height)
+drawPlayer(player.x,player.y)
 
 // 弾
 ctx.fillStyle="yellow"
 bullets.forEach(b=>{
-ctx.fillRect(b.x,b.y,b.width,b.height)
+ctx.fillRect(b.x,b.y,b.w,b.h)
 })
 
 // 敵
-ctx.fillStyle="lime"
 enemies.forEach(e=>{
-ctx.fillRect(e.x,e.y,e.width,e.height)
+drawEnemy(e.x,e.y)
 })
 
 }
 
+// ループ
 function gameLoop(){
-
-if(!gameRunning) return
 
 update()
 draw()
