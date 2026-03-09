@@ -5,7 +5,6 @@
 <title>Galaxy Fighter</title>
 
 <style>
-
 body{
 margin:0;
 background:black;
@@ -46,7 +45,6 @@ width:100%;
 text-align:center;
 font-size:32px;
 }
-
 </style>
 </head>
 
@@ -58,14 +56,11 @@ Press ENTER
 </div>
 
 <div id="ui" style="display:none">
-
 SCORE : <span id="score">0</span><br>
 HIGH : <span id="high">0</span>
-
 <div id="hpbar">
 <div id="hp"></div>
 </div>
-
 </div>
 
 <canvas id="game" width="420" height="620"></canvas>
@@ -83,6 +78,7 @@ let enemies=[]
 let enemyBullets=[]
 let particles=[]
 let stars=[]
+let items=[]
 let boss=null
 
 let score=0
@@ -93,115 +89,85 @@ let high=localStorage.getItem("spaceHigh")||0
 document.getElementById("high").innerText=high
 
 document.addEventListener("keydown",e=>{
-
 keys[e.code]=true
-
 if(state==="title" && e.code==="Enter") startGame()
-
 })
 
 document.addEventListener("keyup",e=>keys[e.code]=false)
 
 for(let i=0;i<120;i++){
-
 stars.push({
 x:Math.random()*420,
 y:Math.random()*620,
 speed:1+Math.random()*3
 })
-
 }
 
 let player={
 x:210,
 y:560,
 speed:6,
-hp:200
+hp:100
 }
 
 function startGame(){
-
 document.getElementById("title").style.display="none"
 document.getElementById("ui").style.display="block"
-
 state="game"
-
 }
 
 function drawJet(x,y,size,color){
-
 ctx.fillStyle=color
-
 ctx.beginPath()
 ctx.moveTo(x,y-size)
 ctx.lineTo(x-size/2,y+size)
 ctx.lineTo(x+size/2,y+size)
 ctx.closePath()
 ctx.fill()
-
 ctx.fillRect(x-3,y-size,6,size+10)
-
 }
 
 function shoot(){
-
 bullets.push({x:player.x,y:player.y-20})
-
 }
 
 setInterval(()=>{
-
 if(state==="game") shoot()
-
 },200)
 
 function spawnEnemy(){
-
 enemies.push({
-
 x:Math.random()*380+20,
 y:-20,
 speed:2+Math.random()*difficulty,
 vx:(Math.random()-0.5)*4,
 timer:0
-
 })
-
 }
 
 setInterval(()=>{
-
 if(state==="game") spawnEnemy()
-
 },700)
 
 function spawnBoss(){
-
 boss={
 x:210,
 y:-120,
-hp:15,
+hp:20,
 timer:0
 }
-
 }
 
 function explosion(x,y){
-
 for(let i=0;i<30;i++){
-
 particles.push({
-
 x:x,
 y:y,
 vx:(Math.random()-0.5)*6,
 vy:(Math.random()-0.5)*6,
 life:40
-
 })
-
 }
-
 }
 
 function update(){
@@ -214,23 +180,18 @@ if(keys["ArrowRight"]) player.x+=player.speed
 player.x=Math.max(20,Math.min(400,player.x))
 
 stars.forEach(s=>{
-
 s.y+=s.speed
-
 if(s.y>620){
 s.y=0
 s.x=Math.random()*420
 }
-
 })
 
 bullets.forEach(b=>b.y-=9)
 
 enemyBullets.forEach(b=>{
-
 b.y+=4+difficulty
 b.x+=b.vx
-
 })
 
 enemies.forEach(e=>{
@@ -243,18 +204,14 @@ if(e.x<20||e.x>400) e.vx*=-1
 e.timer++
 
 if(e.timer>80){
-
 enemyBullets.push({x:e.x,y:e.y,vx:(Math.random()-0.5)*2})
 e.timer=0
-
 }
 
 if(Math.abs(e.x-player.x)<25 && Math.abs(e.y-player.y)<25){
-
 player.hp-=20
 explosion(e.x,e.y)
 e.y=700
-
 }
 
 })
@@ -264,18 +221,14 @@ if(boss){
 boss.y+=1
 boss.timer++
 
-if(boss.timer>90){
+if(boss.timer>60){
 
 for(let i=-2;i<=2;i++){
-
 enemyBullets.push({
-
 x:boss.x,
 y:boss.y,
-vx:i*0.8
-
+vx:i
 })
-
 }
 
 boss.timer=0
@@ -285,14 +238,10 @@ boss.timer=0
 }
 
 enemyBullets.forEach((b,i)=>{
-
 if(Math.abs(b.x-player.x)<18 && Math.abs(b.y-player.y)<18){
-
 player.hp-=10
 enemyBullets.splice(i,1)
-
 }
-
 })
 
 bullets.forEach((b,bi)=>{
@@ -307,6 +256,15 @@ bullets.splice(bi,1)
 enemies.splice(ei,1)
 
 score+=100
+
+if(Math.random()<0.2){
+
+items.push({
+x:e.x,
+y:e.y
+})
+
+}
 
 }
 
@@ -334,12 +292,24 @@ boss=null
 
 })
 
-particles.forEach(p=>{
+items.forEach((it,i)=>{
 
+it.y+=2
+
+if(Math.abs(it.x-player.x)<20 && Math.abs(it.y-player.y)<20){
+
+player.hp=Math.min(player.hp+20,100)
+
+items.splice(i,1)
+
+}
+
+})
+
+particles.forEach(p=>{
 p.x+=p.vx
 p.y+=p.vy
 p.life--
-
 })
 
 particles=particles.filter(p=>p.life>0)
@@ -347,25 +317,20 @@ bullets=bullets.filter(b=>b.y>-10)
 enemyBullets=enemyBullets.filter(b=>b.y<650)
 
 if(score>=nextBoss && !boss){
-
 spawnBoss()
-nextBoss+=6000
-
+nextBoss+=2000
 }
 
 document.getElementById("score").innerText=score
-document.getElementById("hp").style.width=(player.hp/200*100)+"%"
+document.getElementById("hp").style.width=player.hp+"%"
 
 if(player.hp<=0){
 
 if(score>high){
-
 localStorage.setItem("spaceHigh",score)
-
 }
 
 alert("GAME OVER\nScore:"+score)
-
 location.reload()
 
 }
@@ -379,47 +344,39 @@ ctx.clearRect(0,0,420,620)
 ctx.fillStyle="white"
 
 stars.forEach(s=>{
-
 ctx.fillRect(s.x,s.y,2,2)
-
 })
 
 drawJet(player.x,player.y,20,"cyan")
 
 bullets.forEach(b=>{
-
 ctx.fillStyle="yellow"
 ctx.fillRect(b.x-2,b.y-10,4,10)
-
 })
 
 enemyBullets.forEach(b=>{
-
 ctx.fillStyle="red"
 ctx.fillRect(b.x-2,b.y,4,8)
-
 })
 
 enemies.forEach(e=>{
-
 drawJet(e.x,e.y,15,"red")
-
 })
 
 if(boss){
-
 drawJet(boss.x,boss.y,70,"orange")
-
 ctx.fillStyle="white"
 ctx.fillText("BOSS HP:"+boss.hp,boss.x-40,boss.y-80)
-
 }
 
-particles.forEach(p=>{
+items.forEach(it=>{
+ctx.fillStyle="pink"
+ctx.fillText("❤",it.x-5,it.y+5)
+})
 
+particles.forEach(p=>{
 ctx.fillStyle="orange"
 ctx.fillRect(p.x,p.y,3,3)
-
 })
 
 }
