@@ -79,6 +79,7 @@ let enemyBullets=[]
 let particles=[]
 let stars=[]
 let items=[]
+let miniBosses=[]
 let boss=null
 
 let score=0
@@ -176,9 +177,10 @@ difficulty+=0.002
 
 if(keys["ArrowLeft"]) player.x-=player.speed
 if(keys["ArrowRight"]) player.x+=player.speed
-
+if(keys["ArrowUp"]) player.y-=player.speed
+if(keys["ArrowDown"]) player.y+=player.speed
 player.x=Math.max(20,Math.min(400,player.x))
-
+player.y=Math.max(20,Math.min(600,player.y))
 stars.forEach(s=>{
 s.y+=s.speed
 if(s.y>620){
@@ -243,7 +245,25 @@ player.hp-=10
 enemyBullets.splice(i,1)
 }
 })
+miniBosses.forEach((m,mi)=>{
 
+if(Math.abs(b.x-m.x)<30 && Math.abs(b.y-m.y)<30){
+
+bullets.splice(bi,1)
+
+m.hp--
+
+if(m.hp<=0){
+
+explosion(m.x,m.y)
+score+=500
+miniBosses.splice(mi,1)
+
+}
+
+}
+
+})
 bullets.forEach((b,bi)=>{
 
 enemies.forEach((e,ei)=>{
@@ -256,7 +276,16 @@ bullets.splice(bi,1)
 enemies.splice(ei,1)
 
 score+=100
+if(score>0 && score%1500===0){
 
+miniBosses.push({
+x:Math.random()*360+20,
+y:-50,
+hp:10,
+speed:2
+})
+
+}
 if(Math.random()<0.2){
 
 items.push({
@@ -363,6 +392,15 @@ enemies.forEach(e=>{
 drawJet(e.x,e.y,15,"red")
 })
 
+miniBosses.forEach(m=>{
+
+drawJet(m.x,m.y,35,"purple")
+
+ctx.fillStyle="white"
+ctx.fillText("HP:"+m.hp,m.x-15,m.y-40)
+
+})
+  
 if(boss){
 drawJet(boss.x,boss.y,70,"orange")
 ctx.fillStyle="white"
@@ -383,7 +421,17 @@ ctx.fillRect(p.x,p.y,3,3)
 
 function loop(){
 
-if(state==="game") update()
+if(state==="game") update(miniBosses.forEach(m=>{
+
+m.y+=m.speed
+
+if(Math.abs(m.x-player.x)<30 && Math.abs(m.y-player.y)<30){
+
+player.hp-=30
+
+}
+
+}))
 
 draw()
 
