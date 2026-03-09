@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>Galaxy Fighter</title>
+<title>Galaxy Fighter↑↓→←</title>
 
 <style>
 body{
@@ -392,14 +392,6 @@ enemies.forEach(e=>{
 drawJet(e.x,e.y,15,"red")
 })
 
-miniBosses.forEach(m=>{
-
-drawJet(m.x,m.y,35,"purple")
-
-ctx.fillStyle="white"
-ctx.fillText("HP:"+m.hp,m.x-15,m.y-40)
-
-})
   
 if(boss){
 drawJet(boss.x,boss.y,70,"orange")
@@ -433,7 +425,14 @@ player.hp-=30
 
 }))
 
-draw()
+draw(miniBosses.forEach(m=>{
+
+drawJet(m.x,m.y,35,"purple")
+
+ctx.fillStyle="white"
+ctx.fillText("HP:"+m.hp,m.x-15,m.y-40)
+
+}))
 
 requestAnimationFrame(loop)
 
